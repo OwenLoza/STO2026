@@ -1,0 +1,101 @@
+---
+title: "Ejercicio de Pronóstico"
+subtitle: "Importaciones en EEUU de autos mexicanos"
+format:
+  html: 
+    embed-resources: true
+
+---
+# Cargamos los datos
+```{r}
+library(fpp3) 
+
+imports <- tidyquant::tq_get(
+  x    = "MAUINSA",
+  get  = "economic.data",
+  from = "1993-01-01",
+  to   = "2025-10-01"
+) |>
+  mutate(
+    date = yearmonth(date)
+  ) |>
+  as_tsibble(index = date)
+```
+
+# Vemos la distribución
+```{r}
+imports_plt <- imports |>
+  autoplot(price)
+
+imports_points_plt <- imports |>
+  autoplot(price) +
+  geom_point()
+
+imports_plt
+imports_points_plt
+```
+
+```{r}
+imports |> gg_season(price)
+imports |> gg_subseries(price)
+```
+
+# Podemos observar que existe estacionalidad y tendencia, por lo tanto tenemos que entrenar los 4 modelos y que los datos decidan, ya que si solo hacemos solo con uno nos estaremos ocupando de una de las dos ya sea de estacionalidad o de la tendencia pero no de las dos. Entonces: 
+
+
+```{r}
+# Nada más para confirmar que si era oct 2025 el ultimo mes
+imports |> tail()
+```
+
+```{r}
+# Separamos train y test como vimos con slice
+h <- 14
+
+imports_train <- imports |>
+  slice_head(n = nrow(imports) - h)
+
+# Especificamos los modelos
+imports_fit <- imports_train |>
+  model(
+    mean   = MEAN(price),
+    naive  = NAIVE(price),
+    snaive = SNAIVE(price),
+    drift  = RW(price ~ drift())
+  )
+
+# Pronosticamos los 14 meses de test
+imports_fc <- imports_fit |>
+  forecast(h = h)
+
+# El modelo con menor RMSSE es el ganador
+imports_fc |>
+  accuracy(imports) |>
+  arrange(RMSSE)
+
+```
+
+# Como podemos ver ganó el snaive entonces: 
+
+
+```{r}
+# si hubiera ganado otro pues ponemos otro 
+imports_final_fc <- imports |>
+  model(snaive = SNAIVE(price)) |>  
+  forecast(h = h)
+
+# Vemos el pronóstico final
+imports_final_fc |>
+  autoplot(imports)
+```
+
+# Y viendolo nada más los ultimos 5 años para ver la predicción un poco más clara
+
+
+```{r}
+imports_final_fc |>
+  autoplot(imports |> slice_tail(n = 60))
+```
+
+# Ahora bien porque usamos RMSSE para poder escoger el modelo correcto, como podemos ver claramente en nuestro plot de meses podemos ver que hay una estacionalidad contundente, entonces para escoger el modelo usamos el RMSSE porque es una métrica escalada que compara los errores del pronóstico contra el error del naïve estacional en el train, así que no depende de las unidades de la serie, además, como eleva los errores al cuadrado, castiga más los errores grandes que el MASE. Con la partición de train y test comparamos los cuatro modelos, y el SNAIVE fue el que tuvo menor RMSSE y esto tiene sentido porque, como vimos en las gráficas por mes, la serie tiene una estacionalidad muy marcada, y el SNAIVE es el único de los cuatro que la toma en cuenta.
+

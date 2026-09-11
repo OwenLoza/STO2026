@@ -1,0 +1,33 @@
+---
+title: "Mi primer documento de Quarto"
+format: html
+---
+
+Para crear un chunck de código podemos teclear 'CTRL + ALT + I':
+
+```{r}
+library(tidyverse)
+library(fpp3)
+```
+
+Para "correr" un chunck completo de código, podemos hacerlo con "CTRL + SHIFT + ENTER" . Para correr solo la linea o selección actual, simplemente "CTRL + ENTER"
+
+```{r}
+stats::filter()
+```
+
+
+```{r}
+readxl::read_excel()
+```
+
+
+```{r}
+tourism
+```
+
+
+```{r}
+
+```
+

@@ -1,0 +1,48 @@
+---
+title: "Descomposición Series de Tiempo"
+format: html
+---
+
+Cargar paqueterías:
+
+
+```{r}
+library(tidyverse)
+library(fpp3)
+```
+
+Cargamos los datos:
+
+```{r}
+medicinas <- read_csv("medicinas.csv") |>
+    select(fecha, Cost) |>
+    mutate(fecha = dmy(fecha))
+
+medicinas
+```
+
+Al importar los datos, se importan como una "tibble" y necesitamos convertirlos a una "tsibble", vamos a usar "as_tsibble()" :
+
+
+```{r}
+medicinas_tsb <- medicinas |>
+    mutate(fecha = yearmonth(fecha)) |>
+    as_tsibble(index = fecha)
+
+medicinas_tsb
+```
+
+# Descomposición de series de tiempo
+
+## Descomposición clásica
+
+
+```{r}
+medicinas_tsb |>
+    model(
+        clasica = classical_decomposition(Cost, type = "additive")
+    ) |>
+        components() |>
+        autoplot()
+
+```

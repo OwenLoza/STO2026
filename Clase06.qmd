@@ -1,0 +1,57 @@
+---
+title: "Untitled"
+format: html
+---
+
+
+```{r}
+library(tidyverse)
+library(fpp3)
+```
+
+
+```{r}
+aus_gas <- aus_production
+
+aus_gas |>
+    autoplot(Gas)
+```
+
+## Train/test split
+
+```{r}
+h <- 12
+aus_gas_train <- 
+    aus_gas |>
+    slice_head(n = nrow(x = aus_gas) - h)
+aus_gas_test <-
+    aus_gas |>
+    slice_tail(n = h)
+```
+
+## Model fitting
+
+
+```{r}
+aus_gas_fit <- aus_gas_train |>
+    model(
+        snaive = SNAIVE(log(Gas)),
+        drift = RW(log(Gas) ~ drift())
+    )
+aus_gas_fit
+```
+
+## Residual diagnostics
+
+```{r}
+aus_gas_fit |>
+    select(snaive) |>
+    gg_tresiduals() +
+    ggtitle("Diagnóstico de residuos de modelos SNAIVE")
+
+aus_gas_fit |>
+    select(drift) |>
+    gg_tsresiduals() +
+    ggtitle("Diagnóstico de residuos de modelo Drift")
+
+```
